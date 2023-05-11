@@ -136,7 +136,7 @@ descriptions = [('Epsilon = {:0.3f}'.format(eps) if eps else 'Input')
 for i, eps in enumerate(epsilons):
     adv_x = create_adversarial_pattern(image, label, epsilon=eps, alpha=alphas[i], num_iter=num_iters[i])
     adv_x = tf.clip_by_value(image + adv_x, 0, 1)
-    adv_x_new = get_flatten_layer_output(adv_x)
+    adv_x_new = get_flatten_layer_output(model,adv_x)
     [train_acc, test_acc, pred] = svm_classify(x_train_new, y_train, adv_x_new, y_test)
     print("New prediction on eps="+str(eps)+" : ", test_acc*100)
     img_plot(adv_x[:10], eps, pred)
