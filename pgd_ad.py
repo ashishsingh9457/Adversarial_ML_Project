@@ -76,8 +76,8 @@ x_test = x_test.astype('float32') / 255
 # Get image and its label
 # sample = random.sample(range(0, 10000), 10)
 # sample = 1  # random.randint(0, 1000)
-image = x_test[:20]
-label = y_test[:20]
+image = x_test
+label = y_test
 
 #perturbations = create_adversarial_pattern(image, label)
 # # visualize the perturbations
@@ -86,13 +86,25 @@ label = y_test[:20]
 epsilons = [0, 0.007, 0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3]
 descriptions = [('Epsilon = {:0.3f}'.format(eps) if eps else 'Input')
                 for eps in epsilons]
-
-get_flatten_layer_output = K.function(
+def get_flatten_layer_output(model, x, batch_size=400):
+    flatten_layer_output = K.function(
         [model.layers[0].input],  # param 1 will be treated as layer[0].output
         [model.get_layer('flatten').output])  # and this function will return output from flatten layer
 
+    n_sample = x.shape[0]
+    n_batch = int((n_sample + batch_size - 1) / batch_size)
+    flatten_output = np.empty([n_sample, 10])
+
+    for batch in range(n_batch):
+        print(' batch {0}/{1}'.format(batch + 1, n_batch), end='\r')
+        start = batch * batch_size
+        end = min(n_sample, start + batch_size)
+        feature_vector = flatten_layer_output(x[start:end])
+        flatten_output[start:end] = feature_vector[0]
+    return flatten_output
+
 print('\nEvaluating on original data')
-[train_acc, test_acc, pred] = svm_classify(x_train_new, y_train_new[:20], x_test_new[:20], y_test_new[:20])
+[train_acc, test_acc, pred] = svm_classify(x_train_new, y_train, x_test_new, y_test)
 print("Prediction on original data= ", test_acc * 100)
 
 def img_plot(images, epsilon, labels):
@@ -119,7 +131,7 @@ descriptions = [('Epsilon = {:0.3f}'.format(eps) if eps else 'Input')
 for i, eps in enumerate(epsilons):
     adv_x = create_adversarial_pattern(image, label, epsilon=eps, alpha=alphas[i], num_iter=num_iters[i])
     adv_x = tf.clip_by_value(image + adv_x, 0, 1)
-    adv_x_new = get_flatten_layer_output(adv_x)[0]
-    [train_acc, test_acc, pred] = svm_classify(x_train_new, y_train_new[:20], adv_x_new, label)
+    adv_x_new = get_flatten_layer_output(adv_x)
+    [train_acc, test_acc, pred] = svm_classify(x_train_new, y_train, adv_x_new, y_test)
     print("New prediction on eps="+str(eps)+" : ", test_acc*100)
     img_plot(adv_x[:10], eps, pred)
