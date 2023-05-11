@@ -86,6 +86,7 @@ label = y_test
 epsilons = [0, 0.007, 0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3]
 descriptions = [('Epsilon = {:0.3f}'.format(eps) if eps else 'Input')
                 for eps in epsilons]
+
 def get_flatten_layer_output(model, x, batch_size=400):
     flatten_layer_output = K.function(
         [model.layers[0].input],  # param 1 will be treated as layer[0].output
@@ -102,6 +103,10 @@ def get_flatten_layer_output(model, x, batch_size=400):
         feature_vector = flatten_layer_output(x[start:end])
         flatten_output[start:end] = feature_vector[0]
     return flatten_output
+
+
+x_train_new = get_flatten_layer_output(model,x_train)
+x_test_new = get_flatten_layer_output(model,x_test)
 
 print('\nEvaluating on original data')
 [train_acc, test_acc, pred] = svm_classify(x_train_new, y_train, x_test_new, y_test)
